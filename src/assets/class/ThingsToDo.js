@@ -4,18 +4,30 @@ import isTheInputEmpty from "../helpers/isTheInputEmpty"
 import NewTask from "./NewTask"
 class ThingsToDo {
     constructor() {
-        this.allTasks = [
-            {
-                id: nanoid(),
-                task: "Irme al parque a pasear",
-                isCompleted: true,
-            }
-        ]
+        this.allTasks = JSON.parse(localStorage.getItem('allTasks')) || []
+        this.allTasks = this.allTasks.map((tasks) => {
+            return new NewTask(tasks.task, tasks.id, tasks.isCompleted)
+        })
         this.input = document.querySelector('.inputTask')
         this.box = document.querySelector('.box')
         this.pendingTasks = document.querySelector('.boxPending')
         this.input.onkeyup = (e) => this.handleSubmit(e)
         this.printTasks(this.allTasks)
+        const filterAll = document.querySelector('.filterAll')
+        filterAll.onclick = () => this.filterAll()
+        const filterCompleted = document.querySelector('.filterCompleted')
+        filterCompleted.onclick = () => this.filterCompleted()
+        const filterUncompleted = document.querySelector('.filterUncompleted')
+        filterUncompleted.onclick = () => this.filterUncompleted()
+    }
+    getTasksFromLocalStorage() {
+        this.allTasks = JSON.parse(localStorage.getItem('allTasks')) || []
+        this.allTasks = this.allTasks.map((tasks) => {
+            return new ToDo(tasks.task, tasks.id, tasks.isCompleted)
+        })
+    }
+    updateTasksOnLocalStorage() {
+        localStorage.setItem('allTasks', JSON.stringify(this.allTasks))
     }
 
     handleSubmit(e) {
@@ -25,13 +37,18 @@ class ThingsToDo {
         const newTask = new NewTask(this.input.value)
         this.allTasks = [...this.allTasks, newTask]
         this.printTasks()
+        this.updateTasksOnLocalStorage()
     }
     printTasks(array = this.allTasks) {
+        let pendientes = 0
+        this.pendingTasks.innerHTML = ''
         this.box.innerHTML = ''
         array.forEach((task) => {
             const newTask = this.createTask(task)
             this.box.append(newTask)
+            if (!task.isCompleted) pendientes++
         })
+        this.pendingTasks.innerHTML = `${pendientes} pend.`
     }
     createTask(task) {
         const article = document.createElement('article')
@@ -54,6 +71,7 @@ class ThingsToDo {
         if (!task.isCompleted) task.completed()
          else if (task.isCompleted) task.unCompleted()
         this.printTasks()
+        this.updateTasksOnLocalStorage()
     }
     deleteTasks(task) {
         this.allTasks = [...this.allTasks.filter((value) => {
@@ -61,10 +79,12 @@ class ThingsToDo {
             return true
         })]
         this.printTasks(this.allTasks)
+        this.updateTasksOnLocalStorage()
     }
     editTasks(task, newTask) {
         task.update(newTask)
         this.printTasks()
+        this.updateTasksOnLocalStorage()
     }
     createModal(task) {
         console.log(task)
@@ -115,6 +135,21 @@ class ThingsToDo {
         modal.addEventListener('hidden.bs.modal', () => {
             modal.remove()
         })
+    }
+    filterAll() {
+        this.printTasks()
+    }
+    filterCompleted() {
+        const completed = [...this.allTasks].filter(value => {
+            return value.isCompleted
+        })
+        this.printTasks(completed)
+    }
+    filterUncompleted() {
+        const unCompleted = [...this.allTasks].filter(value => {
+            return !value.isCompleted
+        })
+        this.printTasks(unCompleted)
     }
 }
 
